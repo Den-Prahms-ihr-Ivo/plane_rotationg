@@ -40,3 +40,16 @@ def yaw_pitch_roll_to_matrix(
     A[2][2] = cos_phi * cos_theta
 
     return A
+
+
+def calc_angle_between_points(common_point, point_a, point_b):
+
+    n_a = point_a - common_point
+    n_b = point_b - common_point
+
+    dihedral_angle = np.dot(n_a, n_b) / (
+        np.sqrt(np.sum(np.square(n_a))) * np.sqrt(np.sum(np.square(n_b)))
+    )
+
+    dihedral_angle = np.arccos(dihedral_angle)
+    return dihedral_angle * 180 / np.pi
