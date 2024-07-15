@@ -205,6 +205,30 @@ class PaperPlane:
             nina = np.append(s, np.ones((len(s), 1)), axis=1)
             self.sides[i] = np.array([np.matmul(mat, x)[:-1] for x in nina])
 
+    def get_angle_to_threat(self):
+        """ """
+        if self.threat is None:
+            return
+
+        T = self.threat.copy()
+        M = self.marble.copy()
+        Z = self.marble.copy()
+        # Set the z point to 0
+        Z[2] = 0
+        X = self.marble_cs.X_axis.points[1].copy()
+
+        n_a = np.cross(X - M, Z - M)
+        n_b = np.cross(T - M, Z - M)
+
+        dihedral_angle = np.dot(n_a, n_b) / (
+            np.sqrt(np.sum(np.square(n_a))) * np.sqrt(np.sum(np.square(n_b)))
+        )
+        print(dihedral_angle)
+
+        dihedral_angle = np.arccos(dihedral_angle)
+        return dihedral_angle * 180 / np.pi
+
+    # TODO: add threat at an angle to the plane or at a hight above ground.
     def add_threat(self, bearing, default_horizontal_distance=5):
         """
         Known Bearing ( 𝜃 ) = Angle from North
