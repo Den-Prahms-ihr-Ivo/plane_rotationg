@@ -36,6 +36,7 @@ class PaperPlane:
         marble_cs_size=4,
     ):
         marble = np.array([marble_x, marble_y, marble_z])
+        self.initial_marble_z = marble_z
 
         self.threat = None
         self.translation_matrix = None
@@ -228,28 +229,36 @@ class PaperPlane:
         dihedral_angle = np.arccos(dihedral_angle)
         return dihedral_angle * 180 / np.pi
 
-    # TODO: add threat at an angle to the plane or at a hight above ground.
-    def add_threat(self, bearing, default_horizontal_distance=5):
+    def add_threat(
+        self,
+        bearing,
+        horizontal_distance=5,
+        threat_elevation_deg=None,
+        threat_height_above_ground=0,
+    ):
         """
+        You can either set a specific elevation and bearing of the threat or just a bearing and a height above ground.
+
         Known Bearing ( 𝜃 ) = Angle from North
-        Given a known Bearing ( 𝜃 ) and a horizontal distance (HzDist) from a known point (Eo,No), the coordinates (Ep,Np) may be calculated as follows:
+        Given a known Bearing ( 𝜃 ) and a horizontal distance (HzDist) from a known point (X0,Y0), the coordinates (X,Y) may be calculated as follows:
 
-        Ep = [ Sin( 𝜃 ) x HzDist ] + Eo
-        Np = [ Cos( 𝜃 ) x HzDist ] + No
-
-
+        X = [ Sin( 𝜃 ) x HzDist ] + X0
+        Y = [ Cos( 𝜃 ) x HzDist ] + Y0 # X0 and Y0 are 0 in this case
 
         This works for ALL bearings 0°<360°
+
+        The bearing is calculated from the base of the ground coordinate system translated to the marble hight and then rotated back to the plane
         """
         assert abs(bearing) < 360
         if bearing < 0:
             bearing = 360 + bearing
 
         # calc bearing Coords
-        x = _cosine_degrees(bearing) * default_horizontal_distance
-        y = _sine_degrees(bearing) * default_horizontal_distance
+        x = _cosine_degrees(bearing) * horizontal_distance
+        y = _sine_degrees(bearing) * horizontal_distance
 
-        coords = [x, y, 0]
+        coords = [x, y, self.initial_marble_z]
+        print(coords)
 
         # rotate bearing coords
         if self.rotation_matrix is not None:
@@ -258,10 +267,21 @@ class PaperPlane:
 
         # translate bearing coords.
         coords = np.append(coords, [1], axis=0)
-
         coords = np.matmul(self.translation_matrix, coords)[:-1]
 
-        self.threat = coords
+        # Now we have to calculate the angle or set the threat to a given height.
+        if threat_elevation_deg is not None:
+            # Simple geometry:
+            # threat_height = (horizontal_distance * sin(Beta)) / cos Beta
+            # threat_z = marble_z - threat_height
+            threat_height = (
+                horizontal_distance * np.sin(threat_elevation_deg * np.pi / 180)
+            ) / np.cos(threat_elevation_deg * np.pi / 180)
+            coords[2] = max(0, self.marble[2] - threat_height)
+        else:
+            coords[2] = threat_height_above_ground
+
+        self.threat = coords.copy()
 
     def draw(
         self,
