@@ -66,6 +66,15 @@ def vector_from_points(points: List[Point]):
     return np.array(_x), np.array(_y), np.array(_z)
 
 
+def draw_line_vector(ax, x, y, z, color=[0.4, 0.46, 0.51, 0.5]):
+    arrow_prop_dict = dict(
+        mutation_scale=20, lw=1, zorder=-2, arrowstyle="-", shrinkA=0, shrinkB=0
+    )
+
+    a = Arrow3D(x, y, z, color=color, **arrow_prop_dict)
+    ax.add_artist(a)
+
+
 def draw_line(ax, point_A, point_B, color="r", lw=2):
     x, y, z = vector_from_points(np.array([point_A, point_B]))
 
